@@ -1,33 +1,730 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Kho Kho Live</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>KHO KHO LIVE — BROADCAST</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:   #F0C040;
+  --gold2:  #FFD966;
+  --red:    #E8343A;
+  --blue:   #1565C0;
+  --green:  #00C853;
+  --white:  #FFFFFF;
+  --bg:     #060810;
+  --panel:  rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.10);
+  --border2:rgba(255,255,255,0.20);
+  --muted:  rgba(255,255,255,0.40);
+  --teko:   'Teko',sans-serif;
+  --raj:    'Rajdhani',sans-serif;
+  --orb:    'Orbitron',sans-serif;
+}
 
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  background:var(--bg);color:#fff;
+  font-family:var(--raj);
+}
+
+/* ═══════════════════════════════════════
+   ANIMATED BACKGROUND — field mesh
+═══════════════════════════════════════ */
+.bg-layer{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(20,30,60,0.9) 0%, var(--bg) 100%);
+}
+.bg-grid{
+  position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size:80px 80px;
+  animation:gridPan 40s linear infinite;
+}
+@keyframes gridPan{from{background-position:0 0;}to{background-position:80px 80px;}}
+.bg-glow{
+  position:fixed;top:-20%;left:-10%;width:50%;height:70%;z-index:0;
+  background:radial-gradient(ellipse, rgba(232,52,58,0.06) 0%, transparent 70%);
+  pointer-events:none;
+}
+.bg-glow2{
+  position:fixed;top:-20%;right:-10%;width:50%;height:70%;z-index:0;
+  background:radial-gradient(ellipse, rgba(21,101,192,0.06) 0%, transparent 70%);
+  pointer-events:none;
+}
+
+/* ═══════════════════════════════════════
+   LAYOUT SHELL
+═══════════════════════════════════════ */
+.shell{
+  position:relative;z-index:1;
+  width:100%;height:100%;
+  display:flex;flex-direction:column;
+}
+
+/* ═══════════════════════════════════════
+   TOP HEADER STRIP
+═══════════════════════════════════════ */
+.header-strip{
+  height:54px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 48px;
+  background:linear-gradient(90deg,rgba(232,52,58,0.15) 0%,rgba(255,255,255,0.04) 30%,rgba(255,255,255,0.04) 70%,rgba(21,101,192,0.15) 100%);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+}
+.h-brand{
+  display:flex;align-items:center;gap:14px;
+}
+.h-brand-logo{
+  width:36px;height:36px;
+  border:1.5px solid var(--gold);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+}
+.h-brand-logo svg{width:20px;height:20px;}
+.h-brand-name{
+  font-family:var(--teko);font-size:22px;letter-spacing:6px;
+  font-weight:600;color:var(--white);line-height:1;
+}
+.h-brand-name span{color:var(--gold);}
+
+.h-live{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(232,52,58,0.12);
+  border:1px solid rgba(232,52,58,0.35);
+  border-radius:30px;padding:7px 18px;
+}
+.live-pulse{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--red);
+  box-shadow:0 0 0 0 rgba(232,52,58,0.6);
+  animation:livePulse 1.4s ease-in-out infinite;
+}
+@keyframes livePulse{
+  0%{box-shadow:0 0 0 0 rgba(232,52,58,0.6);}
+  70%{box-shadow:0 0 0 10px rgba(232,52,58,0);}
+  100%{box-shadow:0 0 0 0 rgba(232,52,58,0);}
+}
+.live-txt{
+  font-family:var(--raj);font-size:13px;font-weight:700;
+  letter-spacing:4px;color:var(--red);
+}
+
+.h-datetime{
+  text-align:right;
+}
+.h-time{
+  font-family:var(--orb);font-size:16px;font-weight:700;
+  color:var(--white);letter-spacing:2px;
+  font-variant-numeric:tabular-nums;
+}
+.h-date{
+  font-family:var(--raj);font-size:11px;font-weight:500;
+  letter-spacing:2px;color:var(--muted);margin-top:1px;
+}
+
+/* ═══════════════════════════════════════
+   MAIN SCOREBOARD AREA
+═══════════════════════════════════════ */
+.main-score{
+  flex:1;display:flex;align-items:stretch;
+  gap:0;overflow:hidden;
+}
+
+/* TEAM PANELS */
+.team-panel{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:40px 60px;position:relative;overflow:hidden;
+}
+.team-panel::before{
+  content:'';position:absolute;inset:0;
+  opacity:0;transition:opacity 0.4s;
+}
+.team-panel-a{
+  background:linear-gradient(135deg, rgba(232,52,58,0.12) 0%, transparent 60%);
+  border-right:1px solid var(--border);
+}
+.team-panel-a::before{background:linear-gradient(135deg, rgba(232,52,58,0.25) 0%, transparent 60%);}
+.team-panel-b{
+  background:linear-gradient(225deg, rgba(21,101,192,0.12) 0%, transparent 60%);
+  border-left:1px solid var(--border);
+}
+.team-panel-b::before{background:linear-gradient(225deg, rgba(21,101,192,0.25) 0%, transparent 60%);}
+.team-panel.chasing::before{opacity:1;}
+
+/* team diagonal accent */
+.team-panel-a .corner-accent{
+  position:absolute;top:0;left:0;
+  width:0;height:0;
+  border-left:120px solid rgba(232,52,58,0.12);
+  border-bottom:120px solid transparent;
+}
+.team-panel-b .corner-accent{
+  position:absolute;top:0;right:0;
+  width:0;height:0;
+  border-right:120px solid rgba(21,101,192,0.12);
+  border-bottom:120px solid transparent;
+}
+
+.team-emblem{
+  width:110px;height:110px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:24px;position:relative;
+  border:2px solid;
+}
+.team-panel-a .team-emblem{
+  border-color:var(--red);
+  background:radial-gradient(circle, rgba(232,52,58,0.2) 0%, transparent 70%);
+  box-shadow:0 0 40px rgba(232,52,58,0.25),inset 0 0 30px rgba(232,52,58,0.1);
+}
+.team-panel-b .team-emblem{
+  border-color:var(--blue);
+  background:radial-gradient(circle, rgba(21,101,192,0.2) 0%, transparent 70%);
+  box-shadow:0 0 40px rgba(21,101,192,0.25),inset 0 0 30px rgba(21,101,192,0.1);
+}
+.team-emblem-ring{
+  position:absolute;inset:-10px;border-radius:50%;
+  border:1px solid;opacity:0.3;animation:ringPulse 3s ease-in-out infinite;
+}
+.team-panel-a .team-emblem-ring{border-color:var(--red);}
+.team-panel-b .team-emblem-ring{border-color:var(--blue);}
+@keyframes ringPulse{0%,100%{transform:scale(1);opacity:0.3;}50%{transform:scale(1.05);opacity:0.15;}}
+
+.team-emblem-text{
+  font-family:var(--teko);font-size:42px;font-weight:700;letter-spacing:2px;
+}
+.team-panel-a .team-emblem-text{color:var(--red);}
+.team-panel-b .team-emblem-text{color:var(--blue);}
+
+.team-full-name{
+  font-family:var(--teko);font-size:52px;font-weight:700;
+  letter-spacing:4px;line-height:1;text-transform:uppercase;
+  text-align:center;margin-bottom:8px;
+}
+.team-panel-a .team-full-name{color:#fff;}
+.team-panel-b .team-full-name{color:#fff;}
+
+.team-role-badge{
+  font-family:var(--raj);font-size:13px;font-weight:600;
+  letter-spacing:4px;padding:6px 18px;border-radius:4px;
+  text-transform:uppercase;
+}
+.badge-chasing{
+  background:rgba(0,200,83,0.15);
+  border:1px solid rgba(0,200,83,0.35);
+  color:var(--green);
+}
+.badge-defending{
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.12);
+  color:var(--muted);
+}
+
+.team-big-score{
+  font-family:var(--orb);font-weight:900;
+  font-size:160px;line-height:1;letter-spacing:-4px;
+  margin-top:20px;
+  font-variant-numeric:tabular-nums;
+  position:relative;
+}
+.team-panel-a .team-big-score{
+  color:var(--red);
+  text-shadow:0 0 60px rgba(232,52,58,0.4),0 0 120px rgba(232,52,58,0.15);
+}
+.team-panel-b .team-big-score{
+  color:var(--blue);
+  text-shadow:0 0 60px rgba(21,101,192,0.4),0 0 120px rgba(21,101,192,0.15);
+}
+
+.score-bump{animation:scoreBump 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes scoreBump{0%{transform:scale(1);}50%{transform:scale(1.12);}100%{transform:scale(1);}}
+
+/* ═══════════════════════════════════════
+   CENTER COLUMN
+═══════════════════════════════════════ */
+.center-col{
+  width:280px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:space-between;
+  padding:32px 0;position:relative;
+}
+.center-col::before{
+  content:'';position:absolute;top:0;bottom:0;left:50%;
+  width:1px;background:linear-gradient(180deg,transparent 0%,var(--border2) 20%,var(--border2) 80%,transparent 100%);
+}
+
+.c-section-label{
+  font-family:var(--raj);font-size:10px;font-weight:600;
+  letter-spacing:4px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:6px;text-align:center;
+}
+
+/* TIMER */
+.c-timer-wrap{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  width:100%;
+}
+.c-timer{
+  font-family:var(--orb);font-size:68px;font-weight:900;
+  letter-spacing:-2px;font-variant-numeric:tabular-nums;
+  line-height:1;text-align:center;
+  transition:color 0.4s;
+}
+.t-go{color:#fff;}
+.t-warn{color:var(--gold);}
+.t-danger{color:var(--red);animation:dangerFlicker 0.5s ease-in-out infinite alternate;}
+@keyframes dangerFlicker{from{opacity:1;}to{opacity:0.75;}}
+
+.c-timer-bar-wrap{
+  width:180px;height:6px;
+  background:rgba(255,255,255,0.08);
+  border-radius:3px;overflow:hidden;
+}
+.c-timer-bar{
+  height:100%;border-radius:3px;
+  transition:width 1s linear,background 0.4s;
+  background:var(--green);
+}
+
+/* TURN DIAL */
+.c-turn-dial{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.turn-dial-ring{
+  width:100px;height:100px;border-radius:50%;
+  border:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  background:rgba(255,255,255,0.03);
+}
+.turn-dial-ring::before{
+  content:'';position:absolute;inset:-6px;border-radius:50%;
+  border:1px solid rgba(240,192,64,0.15);
+}
+.turn-dial-num{
+  font-family:var(--orb);font-size:36px;font-weight:900;
+  color:var(--gold);line-height:1;
+}
+.turn-dial-total{
+  font-family:var(--raj);font-size:12px;color:var(--muted);margin-top:2px;
+}
+
+/* INNING PIPS */
+.c-inning{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+}
+.inning-pips{
+  display:flex;gap:10px;
+}
+.pip{
+  width:40px;height:8px;border-radius:4px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+  transition:background 0.3s;
+}
+.pip.active{
+  background:var(--gold);
+  box-shadow:0 0 10px rgba(240,192,64,0.5);
+}
+
+/* SEPARATOR VS */
+.c-vs{
+  font-family:var(--teko);font-size:36px;
+  color:rgba(255,255,255,0.08);letter-spacing:2px;
+}
+
+/* CTRL BUTTONS */
+.c-ctrl-wrap{
+  display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;padding:0 20px;
+}
+.c-ctrl-row{
+  display:flex;gap:8px;width:100%;
+}
+.c-ctrl-btn{
+  flex:1;height:40px;border-radius:8px;border:1px solid var(--border);
+  font-family:var(--raj);font-size:12px;font-weight:600;letter-spacing:2px;
+  cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.04);
+  color:var(--muted);display:flex;align-items:center;justify-content:center;gap:4px;
+}
+.c-ctrl-btn:hover{border-color:var(--border2);color:#fff;background:rgba(255,255,255,0.08);}
+.c-ctrl-btn:active{transform:scale(0.95);}
+.c-ctrl-btn.play-btn{
+  background:rgba(0,200,83,0.12);border-color:rgba(0,200,83,0.3);color:var(--green);
+}
+.c-ctrl-btn.play-btn:hover{background:rgba(0,200,83,0.22);}
+.c-ctrl-btn.play-btn.paused{
+  background:rgba(240,192,64,0.12);border-color:rgba(240,192,64,0.3);color:var(--gold);
+}
+
+/* ═══════════════════════════════════════
+   SCORE +/- FLOATING BUTTONS  
+═══════════════════════════════════════ */
+.score-ctrl-a, .score-ctrl-b{
+  position:absolute;bottom:30px;
+  display:flex;align-items:center;gap:14px;
+}
+.score-ctrl-a{left:50%;transform:translateX(-50%);}
+.score-ctrl-b{left:50%;transform:translateX(-50%);}
+
+.s-btn{
+  width:64px;height:64px;border-radius:16px;border:none;
+  font-family:var(--teko);font-size:36px;font-weight:700;
+  cursor:pointer;transition:all 0.15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.s-btn:active{transform:scale(0.90);}
+.s-btn-minus-a{background:rgba(232,52,58,0.15);color:var(--red);border:1px solid rgba(232,52,58,0.25);}
+.s-btn-plus-a{background:var(--red);color:#fff;box-shadow:0 4px 20px rgba(232,52,58,0.4);}
+.s-btn-minus-b{background:rgba(21,101,192,0.15);color:var(--blue);border:1px solid rgba(21,101,192,0.25);}
+.s-btn-plus-b{background:var(--blue);color:#fff;box-shadow:0 4px 20px rgba(21,101,192,0.4);}
+
+/* ═══════════════════════════════════════
+   BOTTOM TICKER BAR
+═══════════════════════════════════════ */
+.ticker-bar{
+  height:48px;flex-shrink:0;
+  display:flex;align-items:center;
+  background:linear-gradient(90deg,rgba(240,192,64,0.08) 0%,rgba(255,255,255,0.03) 20%,rgba(255,255,255,0.03) 80%,rgba(240,192,64,0.08) 100%);
+  border-top:1px solid rgba(240,192,64,0.2);
+  padding:0 48px;gap:48px;
+  overflow:hidden;
+}
+.ticker-item{
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.ticker-key{
+  font-family:var(--raj);font-size:10px;font-weight:600;
+  letter-spacing:3px;color:var(--gold);text-transform:uppercase;
+}
+.ticker-val{
+  font-family:var(--raj);font-size:14px;font-weight:600;
+  letter-spacing:1px;color:#fff;
+}
+.ticker-divider{
+  width:1px;height:24px;background:var(--border);flex-shrink:0;
+}
+
+/* TURN END BUTTON */
+.end-turn-btn{
+  flex:1;height:40px;border-radius:8px;
+  background:rgba(240,192,64,0.1);
+  border:1px solid rgba(240,192,64,0.25);
+  color:var(--gold);
+  font-family:var(--raj);font-size:12px;font-weight:600;letter-spacing:2px;
+  cursor:pointer;transition:all 0.15s;
+}
+.end-turn-btn:hover{background:rgba(240,192,64,0.2);}
+.end-turn-btn:active{transform:scale(0.96);}
+.end-turn-btn:disabled{opacity:0.3;cursor:not-allowed;}
+</style>
+</head>
 <body>
 
-<div class="header">🏃 KHO KHO LIVE</div>
+<div class="bg-layer"></div>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="bg-glow2"></div>
 
-<div class="scoreboard">
+<div class="shell">
 
-    <div class="team left">
-        <div id="team1_name">Red Kites</div>
-        <div id="team1_score" class="score">0</div>
+  <!-- ─── TOP HEADER STRIP ─── -->
+  <div class="header-strip">
+    <div class="h-brand">
+      <div class="h-brand-logo">
+        <svg viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="20" stroke="#F0C040" stroke-width="1.5"/>
+          <path d="M24 8L28 20L40 20L30 28L34 40L24 32L14 40L18 28L8 20L20 20Z" fill="#F0C040" opacity=".9"/>
+        </svg>
+      </div>
+      <div class="h-brand-name">KHO&nbsp;<span>KHO</span>&nbsp;CHAMPIONSHIP</div>
     </div>
 
-    <div class="center">
-        <div id="timer">07:00</div>
-        <div id="phase">TURN</div>
+    <div class="h-live">
+      <div class="live-pulse"></div>
+      <div class="live-txt">LIVE</div>
     </div>
 
-    <div class="team right">
-        <div id="team2_name">Blue Hawks</div>
-        <div id="team2_score" class="score">0</div>
+    <div class="h-datetime">
+      <div class="h-time" id="clockDisp">00:00:00</div>
+      <div class="h-date" id="dateDisp">—</div>
     </div>
+  </div>
+
+  <!-- ─── MAIN SCOREBOARD ─── -->
+  <div class="main-score">
+
+    <!-- TEAM A -->
+    <div class="team-panel team-panel-a chasing" id="panelA">
+      <div class="corner-accent"></div>
+      <div class="team-emblem">
+        <div class="team-emblem-ring"></div>
+        <div class="team-emblem-text" id="logoA">RK</div>
+      </div>
+      <div class="team-full-name" id="team1_name">Red Kites</div>
+      <div class="team-role-badge badge-chasing" id="roleA">CHASING</div>
+      <div class="team-big-score" id="team1_score">0</div>
+
+      <!-- score controls float -->
+      <div style="position:absolute;bottom:30px;display:flex;align-items:center;gap:14px;">
+        <button class="s-btn s-btn-minus-a" onclick="changeScore(1,-1)">−</button>
+        <button class="s-btn s-btn-plus-a"  onclick="changeScore(1,+1)">+</button>
+      </div>
+    </div>
+
+    <!-- CENTER COLUMN -->
+    <div class="center-col">
+
+      <div class="c-timer-wrap">
+        <div class="c-section-label">TURN TIMER</div>
+        <div class="c-timer t-go" id="timer">7:00</div>
+        <div class="c-timer-bar-wrap">
+          <div class="c-timer-bar" id="timerBar"></div>
+        </div>
+      </div>
+
+      <div class="c-vs">VS</div>
+
+      <div class="c-turn-dial">
+        <div class="c-section-label">CURRENT TURN</div>
+        <div class="turn-dial-ring">
+          <div class="turn-dial-num" id="turnNum">1</div>
+        </div>
+        <div class="turn-dial-total" id="turnTotal">TURN 1 OF 4</div>
+      </div>
+
+      <div class="c-inning">
+        <div class="c-section-label">INNINGS</div>
+        <div class="inning-pips">
+          <div class="pip active" id="pip0"></div>
+          <div class="pip" id="pip1"></div>
+        </div>
+      </div>
+
+      <div class="c-ctrl-wrap">
+        <div class="c-ctrl-row">
+          <button class="c-ctrl-btn play-btn" id="btnPlay" onclick="toggleTimer()">▶ START</button>
+        </div>
+        <div class="c-ctrl-row">
+          <button class="c-ctrl-btn" onclick="resetTimer()">↺ RST</button>
+          <button class="end-turn-btn" id="endTurnBtn" onclick="endTurn()">END TURN</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TEAM B -->
+    <div class="team-panel team-panel-b" id="panelB">
+      <div class="corner-accent"></div>
+      <div class="team-emblem">
+        <div class="team-emblem-ring"></div>
+        <div class="team-emblem-text" id="logoB">BH</div>
+      </div>
+      <div class="team-full-name" id="team2_name">Blue Hawks</div>
+      <div class="team-role-badge badge-defending" id="roleB">DEFENDING</div>
+      <div class="team-big-score" id="team2_score">0</div>
+
+      <div style="position:absolute;bottom:30px;display:flex;align-items:center;gap:14px;">
+        <button class="s-btn s-btn-minus-b" onclick="changeScore(2,-1)">−</button>
+        <button class="s-btn s-btn-plus-b"  onclick="changeScore(2,+1)">+</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── BOTTOM TICKER ─── -->
+  <div class="ticker-bar">
+    <div class="ticker-item">
+      <div class="ticker-key">CHASING</div>
+      <div class="ticker-val" id="tickChaser">Red Kites</div>
+    </div>
+    <div class="ticker-divider"></div>
+    <div class="ticker-item">
+      <div class="ticker-key">DEFENDING</div>
+      <div class="ticker-val" id="tickDefender">Blue Hawks</div>
+    </div>
+    <div class="ticker-divider"></div>
+    <div class="ticker-item">
+      <div class="ticker-key">INNING</div>
+      <div class="ticker-val" id="tickInning">1 / 2</div>
+    </div>
+    <div class="ticker-divider"></div>
+    <div class="ticker-item">
+      <div class="ticker-key">PHASE</div>
+      <div class="ticker-val" id="tickPhase">TURN 1 / 4</div>
+    </div>
+    <div class="ticker-divider"></div>
+    <div class="ticker-item">
+      <div class="ticker-key">MATCH STATUS</div>
+      <div class="ticker-val" id="tickStatus" style="color:var(--green);">IN PROGRESS</div>
+    </div>
+  </div>
 
 </div>
 
-<script src="/static/script.js"></script>
+<script>
+/* ─── CONFIG ─── */
+const TOTAL_TIME = 420;
+let timeLeft     = TOTAL_TIME;
+let timerRunning = false;
+let timerIv      = null;
+let curTurn      = 0;      // 0..3
+let scores       = [0, 0];
+
+/* Turn 0,2 → team A chases; Turn 1,3 → team B chases */
+function chaserIdx(t){ return t % 2 === 0 ? 0 : 1; }
+
+/* ─── CLOCK ─── */
+function updateClock(){
+  const n  = new Date();
+  const hh = String(n.getHours()).padStart(2,'0');
+  const mm = String(n.getMinutes()).padStart(2,'0');
+  const ss = String(n.getSeconds()).padStart(2,'0');
+  document.getElementById('clockDisp').textContent = hh+':'+mm+':'+ss;
+  document.getElementById('dateDisp').textContent  = n.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
+}
+setInterval(updateClock,1000);
+updateClock();
+
+/* ─── TIMER ─── */
+function pad(n){ return String(n).padStart(2,'0'); }
+
+function updateTimerDisplay(){
+  const m = Math.floor(timeLeft/60), s = timeLeft % 60;
+  document.getElementById('timer').textContent = m+':'+pad(s);
+  document.getElementById('timerBar').style.width = ((timeLeft/TOTAL_TIME)*100)+'%';
+
+  const el  = document.getElementById('timer');
+  const bar = document.getElementById('timerBar');
+
+  if(timeLeft <= 0){
+    el.className  = 'c-timer t-danger';
+    bar.style.background = 'var(--red)';
+    clearInterval(timerIv); timerRunning = false;
+    const btn = document.getElementById('btnPlay');
+    btn.textContent = '▶ START'; btn.classList.remove('paused');
+  } else if(timeLeft <= 60){
+    el.className  = 'c-timer t-danger';
+    bar.style.background = 'var(--red)';
+  } else if(timeLeft <= 120){
+    el.className  = 'c-timer t-warn';
+    bar.style.background = 'var(--gold)';
+  } else {
+    el.className  = 'c-timer t-go';
+    bar.style.background = 'var(--green)';
+  }
+}
+
+function toggleTimer(){
+  if(curTurn >= 4) return;
+  timerRunning = !timerRunning;
+  const btn = document.getElementById('btnPlay');
+  if(timerRunning){
+    btn.textContent = '⏸ PAUSE'; btn.classList.add('paused');
+    timerIv = setInterval(()=>{ timeLeft--; updateTimerDisplay(); }, 1000);
+  } else {
+    btn.textContent = '▶ RESUME'; btn.classList.remove('paused');
+    clearInterval(timerIv);
+  }
+}
+
+function resetTimer(){
+  clearInterval(timerIv); timerRunning = false; timeLeft = TOTAL_TIME;
+  const btn = document.getElementById('btnPlay');
+  btn.textContent = '▶ START'; btn.classList.remove('paused');
+  updateTimerDisplay();
+}
+
+/* ─── SCORE ─── */
+function changeScore(team, delta){
+  const idx     = team - 1;
+  const chasing = chaserIdx(curTurn);
+  if(idx !== chasing) return;
+  scores[idx] = Math.max(0, scores[idx] + delta);
+  const el = document.getElementById('team'+team+'_score');
+  el.textContent = scores[idx];
+  el.classList.remove('score-bump');
+  void el.offsetWidth; // reflow
+  el.classList.add('score-bump');
+}
+
+/* ─── TURN / PHASE RENDER ─── */
+function renderPhase(){
+  const ci    = chaserIdx(curTurn);
+  const di    = 1 - ci;
+  const names = [
+    document.getElementById('team1_name').textContent,
+    document.getElementById('team2_name').textContent
+  ];
+  const inning = Math.floor(curTurn/2)+1;
+  const turnNo = curTurn+1;
+
+  // Turn dial
+  document.getElementById('turnNum').textContent   = turnNo;
+  document.getElementById('turnTotal').textContent = 'TURN '+turnNo+' OF 4';
+
+  // Inning pips
+  document.getElementById('pip0').classList.toggle('active', inning >= 1);
+  document.getElementById('pip1').classList.toggle('active', inning >= 2);
+
+  // Team panel chasing class
+  document.getElementById('panelA').classList.toggle('chasing', ci === 0);
+  document.getElementById('panelB').classList.toggle('chasing', ci === 1);
+
+  // Role badges
+  const roleA = document.getElementById('roleA');
+  const roleB = document.getElementById('roleB');
+  if(ci === 0){
+    roleA.textContent = 'CHASING';   roleA.className = 'team-role-badge badge-chasing';
+    roleB.textContent = 'DEFENDING'; roleB.className = 'team-role-badge badge-defending';
+  } else {
+    roleA.textContent = 'DEFENDING'; roleA.className = 'team-role-badge badge-defending';
+    roleB.textContent = 'CHASING';   roleB.className = 'team-role-badge badge-chasing';
+  }
+
+  // Ticker
+  document.getElementById('tickChaser').textContent   = names[ci];
+  document.getElementById('tickDefender').textContent = names[di];
+  document.getElementById('tickInning').textContent   = inning+' / 2';
+  document.getElementById('tickPhase').textContent    = 'TURN '+turnNo+' / 4';
+
+  // End turn button
+  document.getElementById('endTurnBtn').disabled = curTurn >= 4;
+}
+
+/* ─── END TURN ─── */
+function endTurn(){
+  if(curTurn >= 4) return;
+  curTurn++;
+  if(curTurn >= 4){
+    document.getElementById('tickStatus').textContent = 'MATCH OVER';
+    document.getElementById('tickStatus').style.color = 'var(--gold)';
+    document.getElementById('endTurnBtn').disabled = true;
+    clearInterval(timerIv); timerRunning = false;
+    const btn = document.getElementById('btnPlay');
+    btn.textContent = '▶ START'; btn.classList.remove('paused');
+  }
+  resetTimer();
+  renderPhase();
+}
+
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a") {
+    
+    // open control in new window (NOT same tab)
+    window.open("control.html", "_blank", "width=900,height=700");
+
+  }
+});
+
+/* ─── INIT ─── */
+updateTimerDisplay();
+renderPhase();
+</script>
 </body>
 </html>
