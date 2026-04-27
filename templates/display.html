@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kho Kho Live Scoreboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;user-select:none;}
+
+:root{
+  --red:   #ff2d55;
+  --blue:  #0a84ff;
+  --gold:  #ffd60a;
+  --green: #30d158;
+  --glass: rgba(255,255,255,0.08);
+  --glass-border: rgba(255,255,255,0.18);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* ─── ANIMATED BACKGROUND ─────────────────────────── */
+body{
+  background:#0a0a14;
+  font-family:'Rajdhani',sans-serif;
+  color:#fff;
+  position:relative;
+}
+
+.bg-layer{
+  position:fixed;inset:0;z-index:0;overflow:hidden;
+}
+
+/* Animated gradient orbs */
+.orb{
+  position:absolute;border-radius:50%;
+  filter:blur(80px);opacity:0.25;
+  animation:float 8s ease-in-out infinite;
+}
+.orb-1{width:600px;height:600px;background:radial-gradient(circle,#ff2d55,transparent);top:-200px;left:-100px;animation-delay:0s;}
+.orb-2{width:500px;height:500px;background:radial-gradient(circle,#0a84ff,transparent);bottom:-150px;right:-100px;animation-delay:-3s;}
+.orb-3{width:400px;height:400px;background:radial-gradient(circle,#bf5af2,transparent);top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:-6s;}
+
+@keyframes float{
+  0%,100%{transform:translateY(0) scale(1);}
+  50%{transform:translateY(-30px) scale(1.05);}
+}
+
+/* Grid overlay */
+.bg-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+
+/* KHO KHO runners animation */
+.runners-layer{
+  position:absolute;inset:0;overflow:hidden;pointer-events:none;
+}
+.runner{
+  position:absolute;bottom:20%;
+  animation:run linear infinite;
+  opacity:0.04;
+  font-size:60px;
+  filter:blur(1px);
+}
+.runner:nth-child(1){animation-duration:12s;animation-delay:0s;}
+.runner:nth-child(2){animation-duration:9s;animation-delay:-4s;bottom:15%;font-size:40px;opacity:0.03;}
+.runner:nth-child(3){animation-duration:14s;animation-delay:-8s;bottom:25%;font-size:50px;opacity:0.025;}
+
+@keyframes run{
+  from{left:-120px;}
+  to{left:calc(100vw + 120px);}
+}
+
+/* ─── MAIN BOARD ──────────────────────────────────── */
+.board{
+  position:relative;z-index:10;
+  width:100vw;height:100vh;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+}
+
+/* ─── TOPBAR ──────────────────────────────────────── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;height:64px;
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,0.12);
+}
+
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,#0a84ff,#bf5af2);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 20px rgba(10,132,255,0.5);
+}
+.brand-icon svg{width:24px;height:24px;}
+.brand-name{
+  font-family:'Orbitron',monospace;
+  font-weight:900;font-size:16px;letter-spacing:4px;
+  background:linear-gradient(135deg,#fff,rgba(255,255,255,0.7));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.brand-sub{font-size:9px;letter-spacing:4px;color:rgba(255,255,255,0.35);margin-top:2px;}
+
+/* MATCH TITLE — center, big and controllable */
+.match-title-wrap{
+  flex:1;text-align:center;padding:0 20px;
+}
+.match-title{
+  font-family:'Orbitron',monospace;
+  font-weight:700;font-size:13px;letter-spacing:3px;
+  color:rgba(255,255,255,0.6);
+  transition:all 0.5s ease;
+  text-transform:uppercase;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.match-title.has-custom{
+  font-size:15px;letter-spacing:4px;
+  color:#ffd60a;
+  text-shadow:0 0 20px rgba(255,214,10,0.4);
+}
+
+.topbar-right{display:flex;align-items:center;gap:10px;}
+
+/* Glass pill components */
+.glass-pill{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 14px;border-radius:30px;
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  backdrop-filter:blur(10px);
+}
+.live-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--red);
+  box-shadow:0 0 8px var(--red);
+  animation:pulse-live 1.2s ease infinite;
+}
+.live-dot.paused{background:#666;box-shadow:none;animation:none;}
+@keyframes pulse-live{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.8);}}
+.live-txt{
+  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;
+  color:rgba(255,255,255,0.8);font-weight:700;
+}
+.clock{
+  font-family:'Share Tech Mono',monospace;
+  font-size:13px;color:rgba(255,255,255,0.4);
+}
+.turn-pill-txt{
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;color:var(--gold);letter-spacing:2px;
+}
+
+/* ─── MAIN AREA ───────────────────────────────────── */
+.main{
+  display:grid;
+  grid-template-columns:1fr 300px 1fr;
+  overflow:hidden;
+  gap:0;
+}
+
+/* ─── TEAM PANELS ─────────────────────────────────── */
+.team{
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:14px;padding:24px 32px;
+  position:relative;overflow:hidden;
+  transition:all 0.5s ease;
+}
+
+/* Glass team background */
+.team::before{
+  content:'';position:absolute;inset:0;
+  opacity:0;transition:opacity 0.5s;
+}
+.team-a::before{background:linear-gradient(135deg,rgba(255,45,85,0.15),transparent);}
+.team-b::before{background:linear-gradient(225deg,rgba(10,132,255,0.15),transparent);}
+.team.chasing::before{opacity:1;}
+
+/* Accent side bar */
+.team::after{
+  content:'';position:absolute;top:10%;bottom:10%;
+  width:3px;border-radius:2px;opacity:0;
+  transition:opacity 0.5s,box-shadow 0.5s;
+}
+.team-a::after{right:0;background:var(--red);box-shadow:0 0 20px var(--red);}
+.team-b::after{left:0;background:var(--blue);box-shadow:0 0 20px var(--blue);}
+.team.chasing::after{opacity:1;}
+
+/* Chasing tag */
+.chasing-badge{
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;letter-spacing:5px;color:var(--gold);
+  padding:4px 16px;border-radius:20px;
+  background:rgba(255,214,10,0.12);
+  border:1px solid rgba(255,214,10,0.35);
+  box-shadow:0 0 15px rgba(255,214,10,0.2);
+  visibility:hidden;opacity:0;
+  transition:all 0.3s;
+  text-transform:uppercase;
+}
+.team.chasing .chasing-badge{visibility:visible;opacity:1;}
+
+/* Logo */
+.logo-wrap{
+  width:120px;height:120px;border-radius:50%;
+  background:rgba(255,255,255,0.06);
+  border:2px solid rgba(255,255,255,0.15);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;flex-shrink:0;
+  transition:all 0.5s;
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+}
+.team-a.chasing .logo-wrap{border-color:rgba(255,45,85,0.5);box-shadow:0 0 40px rgba(255,45,85,0.3);}
+.team-b.chasing .logo-wrap{border-color:rgba(10,132,255,0.5);box-shadow:0 0 40px rgba(10,132,255,0.3);}
+
+.logo-img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:contain;opacity:0;transition:opacity 0.3s;
+  padding:8px;
+}
+.logo-img.loaded{opacity:1;}
+.logo-mono{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:42px;
+  opacity:0.2;transition:opacity 0.3s;
+}
+.team-a .logo-mono{color:var(--red);}
+.team-b .logo-mono{color:var(--blue);}
+.logo-img.loaded~.logo-mono{opacity:0;}
+
+.team-name{
+  font-family:'Orbitron',monospace;font-weight:700;
+  font-size:clamp(20px,2.2vw,36px);
+  letter-spacing:3px;text-align:center;
+  text-transform:uppercase;line-height:1.2;
+}
+.team-a .team-name{
+  background:linear-gradient(135deg,var(--red),#ff6b6b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.team-b .team-name{
+  background:linear-gradient(135deg,var(--blue),#5ac8fa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+/* SCORE */
+.score{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(70px,7vw,100px);
+  line-height:1;letter-spacing:-2px;
+  will-change:transform;transition:transform 0.15s cubic-bezier(.2,2,.3,1);
+  text-shadow:0 4px 30px rgba(0,0,0,0.5);
+}
+.team-a .score{
+  background:linear-gradient(135deg,var(--red),#ff6b6b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 15px rgba(255,45,85,0.4));
+}
+.team-b .score{
+  background:linear-gradient(135deg,var(--blue),#5ac8fa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 15px rgba(10,132,255,0.4));
+}
+.score.pop{transform:scale(1.15);}
+
+.lead-tag{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:4px;
+  padding:4px 14px;border-radius:20px;
+  background:rgba(255,214,10,0.12);border:1px solid rgba(255,214,10,0.4);color:var(--gold);
+  visibility:hidden;opacity:0;transition:all 0.3s;
+}
+.lead-tag.show{visibility:visible;opacity:1;}
+
+/* ─── CENTER COLUMN ───────────────────────────────── */
+.center{
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:12px;
+  padding:20px 10px;
+  position:relative;
+  border-left:1px solid rgba(255,255,255,0.07);
+  border-right:1px solid rgba(255,255,255,0.07);
+}
+
+/* VS divider */
+.vs-divider{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:11px;letter-spacing:6px;color:rgba(255,255,255,0.2);
+}
+
+/* TIMER */
+.timer-ring-wrap{
+  position:relative;width:180px;height:180px;flex-shrink:0;
+}
+.timer-ring-wrap svg{position:absolute;inset:0;transform:rotate(-90deg);}
+.tr-bg{fill:none;stroke:rgba(255,255,255,0.07);stroke-width:8;}
+.tr-fill{
+  fill:none;stroke:var(--blue);stroke-width:8;stroke-linecap:round;
+  stroke-dasharray:502;stroke-dashoffset:0;
+  transition:stroke-dashoffset 0.95s linear,stroke 0.3s;
+  filter:drop-shadow(0 0 6px var(--blue));
+}
+.tr-fill.urgent{stroke:var(--red);filter:drop-shadow(0 0 8px var(--red));}
+
+.timer-inner-abs{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.timer-val{
+  font-family:'Share Tech Mono',monospace;font-weight:700;
+  font-size:46px;color:#fff;letter-spacing:-1px;line-height:1;
+}
+.timer-val.urgent{color:var(--red);animation:urgentBlink 0.5s ease infinite alternate;}
+@keyframes urgentBlink{to{opacity:0.4;}}
+.timer-phase-sm{
+  font-family:'Orbitron',monospace;font-size:8px;letter-spacing:4px;
+  color:rgba(255,255,255,0.35);margin-top:4px;
+}
+
+/* Phase chip */
+.phase-chip{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:4px;
+  padding:5px 18px;border-radius:20px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);
+  color:rgba(255,255,255,0.4);transition:all 0.3s;
+}
+.phase-chip.inplay{background:rgba(48,209,88,0.12);border-color:rgba(48,209,88,0.4);color:var(--green);}
+.phase-chip.onbreak{background:rgba(255,159,10,0.12);border-color:rgba(255,159,10,0.4);color:#ff9f0a;}
+.phase-chip.gameover{background:rgba(255,214,10,0.12);border-color:rgba(255,214,10,0.4);color:var(--gold);}
+
+/* Turn dots */
+.turn-dots{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:180px;}
+.dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);transition:all 0.3s;}
+.dot.done{background:var(--green);border-color:var(--green);box-shadow:0 0 6px var(--green);}
+.dot.current{background:var(--gold);border-color:var(--gold);animation:dotpulse 0.9s ease infinite alternate;}
+@keyframes dotpulse{to{transform:scale(1.7);box-shadow:0 0 10px var(--gold);}}
+
+.center-kk-logo{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.center-icon-box{
+  width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,#0a84ff,#bf5af2);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 25px rgba(10,132,255,0.4);
+}
+.center-icon-box svg{width:26px;height:26px;}
+.center-kk-txt{
+  font-family:'Orbitron',monospace;
+  font-size:8px;letter-spacing:5px;color:rgba(255,255,255,0.25);
+}
+
+/* ─── BOTTOM BAR ──────────────────────────────────── */
+.bottombar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;height:48px;
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(20px);
+  border-top:1px solid rgba(255,255,255,0.08);
+}
+.stats{display:flex;gap:32px;}
+.stat{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.stat-val{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);}
+.stat-label{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:3px;color:rgba(255,255,255,0.25);}
+.bb-brand{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:3px;color:rgba(255,255,255,0.12);}
+
+/* ─── MINI SCOREBOARD TABLE (bottom-right) ──────── */
+.score-table-wrap{
+  display:none;
+  position:fixed;bottom:60px;left:30px;z-index:150;
+  width:260px;
+  background:rgba(10,10,25,0.88);
+  border:1px solid rgba(255,255,255,0.13);
+  border-radius:16px;overflow:hidden;
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  box-shadow:0 16px 48px rgba(0,0,0,0.55),inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.score-table-header{
+  padding:8px 14px;
+  background:linear-gradient(135deg,rgba(255,45,85,0.12),rgba(10,132,255,0.12));
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  font-family:'Orbitron',monospace;font-size:7px;letter-spacing:4px;
+  color:rgba(255,255,255,0.3);text-align:center;
+}
+.score-table{width:100%;border-collapse:collapse;}
+.score-table thead tr th{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:3px;
+  color:rgba(255,255,255,0.25);padding:6px 12px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  text-align:center;font-weight:400;
+}
+.score-table thead tr th:first-child{text-align:left;}
+.score-table tbody tr{
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  transition:background 0.3s;
+}
+.score-table tbody tr:last-child{border-bottom:none;}
+.score-table tbody tr.winning-row{
+  background:rgba(255,214,10,0.05);
+}
+.score-table tbody td{
+  padding:9px 12px;font-size:13px;font-weight:600;
+  color:rgba(255,255,255,0.7);text-align:center;
+}
+.score-table tbody td.team-cell{
+  text-align:left;
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:700;
+  letter-spacing:1px;
+}
+.score-table tbody td.team-cell.red{color:var(--red);}
+.score-table tbody td.team-cell.blue{color:var(--blue);}
+.score-table tbody td.pts-cell{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:18px;
+}
+.score-table tbody td.pts-cell.red{color:var(--red);}
+.score-table tbody td.pts-cell.blue{color:var(--blue);}
+.score-table tbody td.win-cell{
+  font-size:9px;font-family:'Share Tech Mono',monospace;letter-spacing:1px;
+  color:rgba(255,255,255,0.2);
+}
+.score-table tbody td.win-cell.leading{color:var(--gold);font-weight:700;}
+td.win-cell .win-icon{display:none;}
+td.win-cell.leading .win-icon{display:inline;}
+
+/* ─── BREAK OVERLAY ───────────────────────────────── */
+.break-overlay{
+  display:none;position:fixed;inset:0;z-index:100;
+  background:rgba(10,10,20,0.7);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.break-overlay.show{display:flex;}
+.break-box{
+  text-align:center;padding:50px 100px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,159,10,0.4);
+  border-radius:24px;
+  box-shadow:0 0 60px rgba(255,159,10,0.15),inset 0 1px 0 rgba(255,255,255,0.1);
+  backdrop-filter:blur(20px);
+}
+.break-title{
+  font-family:'Orbitron',monospace;font-size:48px;font-weight:900;
+  letter-spacing:8px;color:#ff9f0a;
+  text-shadow:0 0 30px rgba(255,159,10,0.5);
+}
+.break-timer{
+  font-family:'Share Tech Mono',monospace;font-size:60px;font-weight:700;
+  color:#fff;margin-top:12px;letter-spacing:-1px;
+}
+.break-sub{font-size:10px;letter-spacing:5px;color:rgba(255,159,10,0.6);margin-top:8px;}
+
+/* ─── WINNER OVERLAY — CINEMATIC ─────────────────── */
+.winner-overlay{
+  display:none;position:fixed;inset:0;z-index:200;
+  overflow:hidden;
+}
+.winner-overlay.show{display:block;}
+
+/* Dark blurred backdrop */
+.wo-backdrop{
+  position:absolute;inset:0;
+  background:rgba(5,5,15,0.93);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+}
+
+/* Animated radial spotlight */
+.wo-spotlight{
+  position:absolute;
+  width:900px;height:900px;
+  top:50%;left:50%;
+  margin-left:-450px;margin-top:-450px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,214,10,0.18) 0%,rgba(255,214,10,0.04) 40%,transparent 70%);
+  animation:woSpot 2s ease-in-out infinite alternate;
+}
+@keyframes woSpot{
+  from{transform:scale(0.85);}
+  to{transform:scale(1.15);}
+}
+
+/* Runners streaking across */
+.wo-runners{
+  position:absolute;bottom:15%;left:0;width:100%;height:100px;pointer-events:none;
+  overflow:hidden;
+}
+.wo-runner-streak{
+  position:absolute;font-size:56px;top:0;left:-100px;
+  filter:drop-shadow(0 0 18px rgba(255,214,10,0.8));
+}
+/* JS will add inline animation via style */
+@keyframes woRunnerGo{from{left:-100px;}to{left:110vw;}}
+
+/* Pulsing rings */
+.wo-ring{
+  position:absolute;top:50%;left:50%;
+  width:500px;height:500px;
+  margin-left:-250px;margin-top:-250px;
+  border-radius:50%;
+  border:2px solid rgba(255,214,10,0.15);
+  pointer-events:none;
+  animation:woRingPulse 2s ease-in-out infinite;
+}
+.wo-ring2{
+  position:absolute;top:50%;left:50%;
+  width:720px;height:720px;
+  margin-left:-360px;margin-top:-360px;
+  border-radius:50%;
+  border:1px solid rgba(255,214,10,0.07);
+  pointer-events:none;
+  animation:woRingPulse 3s ease-in-out infinite;
+}
+@keyframes woRingPulse{0%,100%{border-color:rgba(255,214,10,0.1);}50%{border-color:rgba(255,214,10,0.4);}}
+
+/* Main content - centered absolutely, JS drives the animation class */
+.wo-content{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+  pointer-events:none;
+}
+/* Animation class added by JS on each show */
+.wo-content.animating{
+  animation:woContentIn 0.7s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes woContentIn{
+  from{opacity:0;transform:translate(-50%,-50%) scale(0.6);}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1);}
+}
+
+.wo-label{
+  font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:8px;
+  color:rgba(255,255,255,0.3);margin-bottom:16px;
+  opacity:0;
+  animation:woFadeUp 0.5s ease 0.35s forwards;
+}
+.wo-trophy{
+  font-size:100px;display:block;
+  opacity:0;
+  animation:woTrophy 0.8s cubic-bezier(.34,1.56,.64,1) 0.2s forwards;
+}
+@keyframes woTrophy{
+  from{opacity:0;transform:scale(0) rotate(-30deg);}
+  to{opacity:1;transform:scale(1) rotate(0deg);}
+}
+/* After trophy animates in, add bounce */
+.winner-overlay.show .wo-trophy{
+  animation:woTrophy 0.8s cubic-bezier(.34,1.56,.64,1) 0.2s forwards, tbounce 1.4s 1.2s ease-in-out infinite alternate;
+}
+@keyframes tbounce{to{transform:translateY(-16px) scale(1.06);}}
+
+/* Team name with animated gradient sweep */
+.wo-name{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(52px,7vw,100px);letter-spacing:4px;
+  background:linear-gradient(90deg,#ffd60a,#fff,#ffd60a,#ff9f0a,#ffd60a);
+  background-size:300% 100%;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  opacity:0;
+  animation:woFadeUp 0.6s ease 0.5s forwards, woSweep 2.5s 1.1s linear infinite;
+  text-align:center;white-space:nowrap;
+}
+@keyframes woFadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes woSweep{0%{background-position:0% 50%;}100%{background-position:300% 50%;}}
+
+.wo-wins-txt{
+  font-family:'Orbitron',monospace;font-weight:700;
+  font-size:clamp(16px,2.2vw,28px);letter-spacing:10px;
+  color:rgba(255,255,255,0.5);
+  opacity:0;
+  animation:woFadeUp 0.5s ease 0.75s forwards;
+  margin-top:6px;
+}
+.wo-score{
+  font-family:'Rajdhani',sans-serif;font-weight:600;
+  font-size:clamp(18px,2vw,26px);letter-spacing:6px;
+  color:rgba(255,255,255,0.25);
+  opacity:0;
+  animation:woFadeUp 0.5s ease 0.95s forwards;
+  margin-top:14px;
+}
+.wo-hint{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;
+  color:rgba(255,255,255,0.12);margin-top:30px;
+  opacity:0;
+  animation:woFadeUp 0.5s ease 1.3s forwards;
+}
+
+/* ─── PLAYER SPOTLIGHT OVERLAY ────────────────────── */
+.spotlight-overlay{
+  display:none;position:fixed;
+  bottom:80px;right:30px;z-index:150;
+  animation:spotIn 0.6s cubic-bezier(.34,1.56,.64,1);
+}
+.spotlight-overlay.show{display:block;}
+@keyframes spotIn{from{opacity:0;transform:translateX(60px) scale(0.9);}to{opacity:1;transform:translateX(0) scale(1);}}
+
+.spotlight-card{
+  width:280px;
+  background:rgba(15,15,30,0.85);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:20px;
+  overflow:hidden;
+  backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+  box-shadow:0 20px 60px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.spotlight-header{
+  padding:14px 18px 10px;
+  background:linear-gradient(135deg,rgba(10,132,255,0.2),rgba(191,90,242,0.2));
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  display:flex;align-items:center;gap:8px;
+}
+.spotlight-header-txt{
+  font-family:'Orbitron',monospace;font-size:8px;letter-spacing:4px;
+  color:rgba(255,255,255,0.4);
+}
+.spotlight-star{color:var(--gold);font-size:12px;}
+.spotlight-body{
+  display:flex;gap:14px;align-items:center;padding:14px 18px 10px;
+}
+.spotlight-photo{
+  width:64px;height:64px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,0.08);
+  border:2px solid rgba(255,255,255,0.15);
+  overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.spotlight-photo img{width:100%;height:100%;object-fit:cover;}
+.spotlight-photo-placeholder{
+  font-family:'Orbitron',monospace;font-size:22px;font-weight:900;
+  color:rgba(255,255,255,0.2);
+}
+.spotlight-info{flex:1;min-width:0;}
+.spotlight-name{
+  font-family:'Orbitron',monospace;font-weight:700;font-size:13px;
+  letter-spacing:1px;color:#fff;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.spotlight-team-tag{
+  font-size:10px;letter-spacing:2px;color:rgba(255,255,255,0.4);
+  margin:3px 0;font-family:'Share Tech Mono',monospace;
+}
+.spotlight-position{
+  font-size:10px;letter-spacing:2px;color:var(--blue);
+  font-family:'Share Tech Mono',monospace;
+}
+
+/* Points bar — full width, prominent */
+.spotlight-points-bar{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:10px 18px;
+  background:rgba(255,214,10,0.07);
+  border-top:1px solid rgba(255,214,10,0.15);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.spotlight-score-num{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:36px;
+  color:var(--gold);line-height:1;
+  text-shadow:0 0 20px rgba(255,214,10,0.5);
+}
+.spotlight-score-lbl{
+  font-size:9px;letter-spacing:4px;color:rgba(255,214,10,0.5);
+  font-family:'Share Tech Mono',monospace;
+  text-transform:uppercase;
+}
+.spotlight-score-box{text-align:center;}
+
+/* Keep old score-row for note */
+.spotlight-score-row{
+  display:none; /* replaced by points-bar + note-row */
+}
+.spotlight-note-row{
+  padding:8px 18px 12px;
+  text-align:center;
+}
+.spotlight-note{
+  font-size:11px;color:rgba(255,255,255,0.4);
+  line-height:1.4;font-weight:500;font-style:italic;
+}
+
+/* ─── POLL OVERLAY ────────────────────────────────── */
+.poll-overlay{
+  display:none;position:fixed;
+  top:80px;right:30px;z-index:150;
+  width:300px;
+  animation:pollIn 0.5s cubic-bezier(.34,1.56,.64,1);
+}
+.poll-overlay.show{display:block;}
+@keyframes pollIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+
+.poll-card{
+  background:rgba(15,15,30,0.88);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:20px;overflow:hidden;
+  backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+  box-shadow:0 20px 60px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.poll-header{
+  padding:14px 18px;
+  background:linear-gradient(135deg,rgba(255,45,85,0.15),rgba(10,132,255,0.15));
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.poll-title-label{
+  font-family:'Orbitron',monospace;font-size:8px;letter-spacing:4px;
+  color:rgba(255,255,255,0.35);margin-bottom:6px;
+}
+.poll-question{
+  font-family:'Orbitron',monospace;font-weight:700;font-size:13px;
+  letter-spacing:1px;color:#fff;line-height:1.3;
+}
+.poll-options{padding:14px 18px;display:flex;flex-direction:column;gap:10px;}
+.poll-option{
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px;overflow:hidden;
+  position:relative;cursor:pointer;
+  transition:all 0.2s;
+}
+.poll-option:hover{border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);}
+.poll-option-fill{
+  position:absolute;top:0;left:0;height:100%;
+  background:linear-gradient(90deg,rgba(10,132,255,0.25),rgba(191,90,242,0.15));
+  border-radius:12px;transition:width 0.7s ease;width:0%;
+}
+.poll-option-content{
+  position:relative;z-index:1;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;
+}
+.poll-option-text{font-weight:600;font-size:13px;letter-spacing:1px;}
+.poll-option-pct{
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:700;
+  color:rgba(255,255,255,0.5);
+}
+.poll-total{
+  text-align:center;padding:10px;
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;
+  color:rgba(255,255,255,0.25);border-top:1px solid rgba(255,255,255,0.06);
+}
+
+/* ─── SCORE TABLE OVERLAY (shown via control) ─────── */
+.scoretbl-overlay{
+  display:none;position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  z-index:160;
+  width:min(620px,92vw);
+  animation:stblIn 0.55s cubic-bezier(.34,1.56,.64,1);
+}
+.scoretbl-overlay.show{display:block;}
+@keyframes stblIn{from{opacity:0;transform:translate(-50%,-50%) scale(0.85);}to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+
+.scoretbl-backdrop{
+  position:fixed;inset:0;z-index:159;
+  background:rgba(5,5,15,0.6);
+  backdrop-filter:blur(8px);
+  display:none;
+}
+.scoretbl-backdrop.show{display:block;}
+
+.scoretbl-card{
+  background:linear-gradient(160deg,rgba(14,16,32,0.98),rgba(8,10,22,0.98));
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:24px;overflow:hidden;
+  box-shadow:0 40px 100px rgba(0,0,0,0.8),0 0 0 1px rgba(255,255,255,0.05),inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.scoretbl-header{
+  padding:20px 28px 16px;
+  background:linear-gradient(135deg,rgba(255,45,85,0.12),rgba(10,132,255,0.12));
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.scoretbl-title{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:13px;
+  letter-spacing:5px;color:rgba(255,255,255,0.7);
+}
+.scoretbl-event{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;
+  color:rgba(255,255,255,0.25);margin-top:4px;
+}
+.scoretbl-vs{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:22px;
+  letter-spacing:4px;color:rgba(255,255,255,0.08);
+}
+
+/* Team name row */
+.scoretbl-teams{
+  display:grid;grid-template-columns:1fr auto 1fr;
+  padding:24px 28px 0;gap:12px;align-items:center;
+}
+.scoretbl-team{text-align:center;}
+.scoretbl-team-name{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(16px,2.5vw,26px);letter-spacing:2px;
+}
+.scoretbl-team-name.red{
+  background:linear-gradient(135deg,var(--red),#ff6b6b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.scoretbl-team-name.blue{
+  background:linear-gradient(135deg,var(--blue),#5ac8fa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.scoretbl-big-score{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(48px,8vw,80px);line-height:1;letter-spacing:-2px;
+}
+.scoretbl-big-score.red{
+  color:var(--red);text-shadow:0 0 30px rgba(255,45,85,0.4);
+}
+.scoretbl-big-score.blue{
+  color:var(--blue);text-shadow:0 0 30px rgba(10,132,255,0.4);
+}
+.scoretbl-center-vs{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:18px;
+  letter-spacing:4px;color:rgba(255,255,255,0.12);text-align:center;
+}
+
+/* Turn-by-turn table */
+.scoretbl-table-wrap{padding:18px 28px 24px;}
+.scoretbl-table{width:100%;border-collapse:collapse;}
+.scoretbl-table thead th{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:4px;
+  color:rgba(255,255,255,0.2);padding:0 12px 10px;text-align:center;font-weight:400;
+  text-transform:uppercase;
+}
+.scoretbl-table thead th:first-child{text-align:left;}
+.scoretbl-table tbody tr{
+  border-top:1px solid rgba(255,255,255,0.05);
+  transition:background 0.2s;
+}
+.scoretbl-table tbody tr:hover{background:rgba(255,255,255,0.03);}
+.scoretbl-table tbody td{
+  padding:10px 12px;font-size:13px;font-weight:600;
+  color:rgba(255,255,255,0.55);text-align:center;
+  font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;
+}
+.scoretbl-table tbody td:first-child{
+  text-align:left;
+  font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:2px;
+  color:rgba(255,255,255,0.3);
+}
+.scoretbl-table tbody td.cell-a{color:var(--red);font-weight:700;font-size:14px;font-family:'Orbitron',monospace;}
+.scoretbl-table tbody td.cell-b{color:var(--blue);font-weight:700;font-size:14px;font-family:'Orbitron',monospace;}
+.scoretbl-table tbody td.cell-winner{color:var(--gold);font-size:10px;}
+.scoretbl-table tfoot td{
+  padding:12px 12px 0;
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:2px;
+  border-top:1px solid rgba(255,255,255,0.1);
+}
+.scoretbl-table tfoot td.total-a{color:var(--red);text-align:center;}
+.scoretbl-table tfoot td.total-b{color:var(--blue);text-align:center;}
+.scoretbl-table tfoot td.total-label{color:rgba(255,255,255,0.25);text-align:left;}
+
+/* Winner tag inside table */
+.winner-tag{
+  display:inline-block;
+  background:rgba(255,214,10,0.12);border:1px solid rgba(255,214,10,0.3);
+  border-radius:20px;padding:3px 12px;
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:3px;
+  color:var(--gold);margin-top:6px;
+}
+
+/* ─── CONFETTI ────────────────────────────────────── */
+.confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:190;overflow:hidden;}
+.cp{position:absolute;top:-20px;animation:fall linear forwards;}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+
+/* ─── KHO KHO ANIMATION BUTTON ────────────────────── */
+.kk-anim-wrap{
+  position:fixed;inset:0;
+  z-index:80;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;
+}
+/* A row of runners that cross the screen */
+.kk-anim-runners{
+  display:none;position:relative;width:100vw;height:80px;overflow:hidden;
+}
+.kk-anim-runners.show{display:block;}
+.kk-runner-sprite{
+  position:absolute;font-size:52px;
+  filter:drop-shadow(0 0 18px rgba(255,214,10,0.7));
+}
+.kk-runner-sprite:nth-child(1){
+  animation:kkRun1 1.8s linear forwards;top:5px;
+}
+.kk-runner-sprite:nth-child(2){
+  animation:kkRun2 1.8s linear 0.25s forwards;top:20px;font-size:44px;opacity:0.85;
+}
+.kk-runner-sprite:nth-child(3){
+  animation:kkRun3 1.8s linear 0.5s forwards;top:10px;font-size:48px;opacity:0.9;
+}
+@keyframes kkRun1{from{left:-80px;transform:scaleX(1);}to{left:110vw;transform:scaleX(1);}}
+@keyframes kkRun2{from{left:-80px;}to{left:110vw;}}
+@keyframes kkRun3{from{left:-80px;}to{left:110vw;}}
+
+.kk-anim-text{
+  font-family:'Orbitron',monospace;font-size:clamp(28px,5vw,56px);font-weight:900;
+  letter-spacing:8px;color:var(--gold);
+  text-shadow:0 0 30px rgba(255,214,10,0.8),0 0 60px rgba(255,214,10,0.4);
+  display:none;
+  animation:kkTextPop 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+.kk-anim-text.show{display:block;}
+@keyframes kkTextPop{from{transform:scale(0.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+/* Keep old figure id for JS compat */
+.kk-anim-figure{display:none;}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div class="bg-layer">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="bg-grid"></div>
+  <div class="runners-layer">
+    <div class="runner">🏃</div>
+    <div class="runner">🏃</div>
+    <div class="runner">🏃</div>
+  </div>
+</div>
+
+<div class="confetti-layer" id="confetti"></div>
+
+<!-- KHO KHO ANIMATION -->
+<div class="kk-anim-wrap" id="kk_anim_wrap">
+  <div class="kk-anim-text" id="kk_anim_text">KHO KHO!</div>
+  <div class="kk-anim-runners" id="kk_anim_runners">
+    <div class="kk-runner-sprite">🏃</div>
+    <div class="kk-runner-sprite">🏃</div>
+    <div class="kk-runner-sprite">🏃</div>
+  </div>
+  <div class="kk-anim-figure" id="kk_anim_figure"></div>
+</div>
+
+<!-- PLAYER SPOTLIGHT -->
+<div class="spotlight-overlay" id="spotlight_overlay">
+  <div class="spotlight-card">
+    <div class="spotlight-header">
+      <span class="spotlight-star">★</span>
+      <span class="spotlight-header-txt">PLAYER SPOTLIGHT</span>
+    </div>
+    <div class="spotlight-body">
+      <div class="spotlight-photo">
+        <img id="spotlight_photo_img" src="" alt="" style="display:none;">
+        <div class="spotlight-photo-placeholder" id="spotlight_placeholder">?</div>
+      </div>
+      <div class="spotlight-info">
+        <div class="spotlight-name" id="spotlight_name">—</div>
+        <div class="spotlight-team-tag" id="spotlight_team">—</div>
+        <div class="spotlight-position" id="spotlight_position">—</div>
+      </div>
+    </div>
+    <!-- Points — full-width prominent row -->
+    <div class="spotlight-points-bar">
+      <div class="spotlight-score-box">
+        <div class="spotlight-score-num" id="spotlight_score">0</div>
+        <div class="spotlight-score-lbl">POINTS</div>
+      </div>
+    </div>
+    <div class="spotlight-note-row">
+      <div class="spotlight-note" id="spotlight_note"></div>
+    </div>
+  </div>
+</div>
+
+<!-- POLL -->
+<div class="poll-overlay" id="poll_overlay">
+  <div class="poll-card">
+    <div class="poll-header">
+      <div class="poll-title-label">LIVE POLL</div>
+      <div class="poll-question" id="poll_question">—</div>
+    </div>
+    <div class="poll-options" id="poll_options"></div>
+    <div class="poll-total" id="poll_total">0 RESPONSES</div>
+  </div>
+</div>
+
+<!--MINI SCOREBOARD TABLE-->
+<div class="score-table-wrap" id="score_table_wrap">
+  <div class="score-table-header">MATCH SCOREBOARD</div>
+  <table class="score-table">
+    <thead>
+      <tr>
+        <th>TEAM</th>
+        <th>PTS</th>
+        <th>TURN</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr id="strow_a">
+        <td class="team-cell red" id="st_name_a">TEAM A</td>
+        <td class="pts-cell red" id="st_pts_a">00</td>
+        <td class="win-cell" id="st_turn_a">—</td>
+        <td class="win-cell" id="st_lead_a"><span class="win-icon">▲</span></td>
+      </tr>
+      <tr id="strow_b">
+        <td class="team-cell blue" id="st_name_b">TEAM B</td>
+        <td class="pts-cell blue" id="st_pts_b">00</td>
+        <td class="win-cell" id="st_turn_b">—</td>
+        <td class="win-cell" id="st_lead_b"><span class="win-icon">▲</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="board">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 26 26" fill="none">
+          <rect x="3" y="11.5" width="20" height="1.5" rx="0.75" fill="rgba(255,255,255,0.5)"/>
+          <rect x="12.25" y="3" width="1.5" height="20" rx="0.75" fill="rgba(255,255,255,0.5)"/>
+          <circle cx="9" cy="7" r="2" fill="white"/>
+          <path d="M9 9.5 Q7.5 12 8 15 L10 15 Q9.5 12.5 11 11 Z" fill="white"/>
+          <path d="M8 15 L7 19" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M10 15 L11 18" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M9 11 L6 13" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M11 11 L13.5 10" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">KHO KHO</div>
+        <div class="brand-sub">LIVE SCOREBOARD</div>
+      </div>
+    </div>
+
+    <div class="match-title-wrap">
+      <div class="match-title" id="match_title">KHO KHO CHAMPIONSHIP</div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="glass-pill">
+        <div class="live-dot" id="live_dot"></div>
+        <span class="live-txt" id="live_txt">LIVE</span>
+      </div>
+      <div class="glass-pill">
+        <span class="turn-pill-txt" id="turn_pill">TURN 1/8</span>
+      </div>
+      <div class="clock" id="clock">00:00</div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TEAM A -->
+    <div class="team team-a" id="panel_a">
+      <div class="chasing-badge">▶ CHASING</div>
+      <div class="logo-wrap" id="logo_a">
+        <img class="logo-img" id="img_a" src="" alt="">
+        <div class="logo-mono" id="mono_a">A</div>
+      </div>
+      <div class="team-name" id="name_a">TEAM A</div>
+      <div class="score" id="score_a">00</div>
+      <div class="lead-tag" id="lead_a">LEADING ▲</div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center">
+      <div class="center-kk-logo">
+        <div class="center-icon-box">
+          <svg viewBox="0 0 26 26" fill="none">
+            <rect x="3" y="11.5" width="20" height="1.5" rx="0.75" fill="rgba(255,255,255,0.6)"/>
+            <rect x="12.25" y="3" width="1.5" height="20" rx="0.75" fill="rgba(255,255,255,0.6)"/>
+            <circle cx="9" cy="7" r="2" fill="white"/>
+            <path d="M9 9.5 Q7.5 12 8 15 L10 15 Q9.5 12.5 11 11 Z" fill="white"/>
+            <path d="M8 15 L7 19" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M10 15 L11 18" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M9 11 L6 13" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M11 11 L13.5 10" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="center-kk-txt">KHO KHO</div>
+      </div>
+
+      <div class="timer-ring-wrap">
+        <svg viewBox="0 0 180 180" width="180" height="180">
+          <circle class="tr-bg" cx="90" cy="90" r="80"/>
+          <circle class="tr-fill" id="tr_fill" cx="90" cy="90" r="80"
+            stroke-dasharray="502" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-inner-abs">
+          <div class="timer-val" id="timer_val">07:00</div>
+          <div class="timer-phase-sm" id="timer_phase_sm">TURN</div>
+        </div>
+      </div>
+
+      <div class="vs-divider">— VS —</div>
+      <div class="phase-chip" id="phase_chip">WAITING</div>
+      <div class="turn-dots" id="turn_dots"></div>
+    </div>
+
+    <!-- TEAM B -->
+    <div class="team team-b" id="panel_b">
+      <div class="chasing-badge">▶ CHASING</div>
+      <div class="logo-wrap" id="logo_b">
+        <img class="logo-img" id="img_b" src="" alt="">
+        <div class="logo-mono" id="mono_b">B</div>
+      </div>
+      <div class="team-name" id="name_b">TEAM B</div>
+      <div class="score" id="score_b">00</div>
+      <div class="lead-tag" id="lead_b">LEADING ▲</div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <footer class="bottombar">
+    <div class="stats">
+      <div class="stat"><span class="stat-val" id="bb_phase">TURN</span><span class="stat-label">PHASE</span></div>
+      <div class="stat"><span class="stat-val" id="bb_status">WAITING</span><span class="stat-label">STATUS</span></div>
+      <div class="stat"><span class="stat-val" id="bb_venue">—</span><span class="stat-label">VENUE</span></div>
+      <div class="stat"><span class="stat-val" id="bb_match">—</span><span class="stat-label">MATCH</span></div>
+    </div>
+    <div class="bb-brand">KHO KHO LIVE · REAL-TIME SCOREBOARD</div>
+  </footer>
+
+</div><!-- /board -->
+
+<!-- BREAK OVERLAY -->
+<div class="break-overlay" id="break_overlay">
+  <div class="break-box">
+    <div class="break-title">BREAK TIME</div>
+    <div class="break-timer" id="break_timer">04:59</div>
+    <div class="break-sub">REMAINING</div>
+  </div>
+</div>
+
+<!-- WINNER OVERLAY — CINEMATIC -->
+<div class="winner-overlay" id="winner_overlay">
+  <div class="wo-backdrop"></div>
+  <div class="wo-ring"></div>
+  <div class="wo-ring2"></div>
+  <div class="wo-runners" id="wo_runners">
+    <div class="wo-runner-streak">🏃</div>
+    <div class="wo-runner-streak">🏃</div>
+    <div class="wo-runner-streak">🏃</div>
+    <div class="wo-runner-streak">🏃</div>
+  </div>
+  <div class="wo-spotlight"></div>
+  <div class="wo-content">
+    <div class="wo-label">🏆 MATCH RESULT 🏆</div>
+    <span class="wo-trophy">🏆</span>
+    <div class="wo-name" id="wo_name">—</div>
+    <div class="wo-wins-txt" id="wo_wins_txt">WINS THE MATCH!</div>
+    <div class="wo-score" id="wo_score"></div>
+    <div class="wo-hint">TAP OR PRESS ANY KEY TO DISMISS</div>
+  </div>
+</div>
+
+<!-- SCORE TABLE OVERLAY -->
+<div class="scoretbl-backdrop" id="scoretbl_backdrop"></div>
+<div class="scoretbl-overlay" id="scoretbl_overlay">
+  <div class="scoretbl-card">
+    <div class="scoretbl-header">
+      <div>
+        <div class="scoretbl-title">MATCH SCORECARD</div>
+        <div class="scoretbl-event" id="stbl_event">KHO KHO CHAMPIONSHIP</div>
+      </div>
+      <div class="scoretbl-vs">VS</div>
+    </div>
+    <div class="scoretbl-teams">
+      <div class="scoretbl-team">
+        <div class="scoretbl-team-name red" id="stbl_name_a">TEAM A</div>
+        <div class="scoretbl-big-score red" id="stbl_score_a">00</div>
+      </div>
+      <div class="scoretbl-center-vs">—</div>
+      <div class="scoretbl-team">
+        <div class="scoretbl-team-name blue" id="stbl_name_b">TEAM B</div>
+        <div class="scoretbl-big-score blue" id="stbl_score_b">00</div>
+      </div>
+    </div>
+    <div class="scoretbl-table-wrap">
+      <table class="scoretbl-table">
+        <thead>
+          <tr>
+            <th>DETAIL</th>
+            <th id="stbl_th_a">TEAM A</th>
+            <th id="stbl_th_b">TEAM B</th>
+            <th>RESULT</th>
+          </tr>
+        </thead>
+        <tbody id="stbl_body">
+          <!-- filled by JS -->
+        </tbody>
+        <tfoot>
+          <tr>
+            <td class="total-label">TOTAL</td>
+            <td class="total-a" id="stbl_total_a">00</td>
+            <td class="total-b" id="stbl_total_b">00</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const CIRC = 2 * Math.PI * 80; // ~502
+
+let state = {}, localSec = 0, running = false, tick = null, winnerShown = false;
+const prevScore = [null, null];
+
+function fmt(s) {
+  const m = Math.floor(s/60), ss = s%60;
+  return String(m).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
+}
+function set(id, v) {
+  const el = $(id);
+  if (el && el.textContent !== String(v)) el.textContent = v;
+}
+
+/* ── TIMER ── */
+function startTick(val) {
+  localSec = val; running = true;
+  clearInterval(tick);
+  tick = setInterval(() => {
+    localSec = Math.max(0, localSec - 1);
+    paintTimer(localSec);
+  }, 1000);
+}
+function stopTick(val) {
+  running = false; clearInterval(tick); tick = null;
+  localSec = val; paintTimer(val);
+}
+function paintTimer(s) {
+  const urgent = s <= 60 && running;
+  $('timer_val').textContent = fmt(s);
+  $('timer_val').classList.toggle('urgent', urgent);
+  if (state.phase === 'break') $('break_timer').textContent = fmt(s);
+  const dur = (state.phase === 'break') ? 299 : 420;
+  const pct = Math.max(0, Math.min(1, s / dur));
+  $('tr_fill').style.strokeDashoffset = CIRC * (1 - pct);
+  $('tr_fill').classList.toggle('urgent', urgent);
+}
+
+/* ── RENDER ── */
+function render(d) {
+  state = d;
+
+  // Names
+  const nA = (d.teams?.[0]?.name || 'TEAM A').toUpperCase();
+  const nB = (d.teams?.[1]?.name || 'TEAM B').toUpperCase();
+  set('name_a', nA); set('mono_a', nA.slice(0,2));
+  set('name_b', nB); set('mono_b', nB.slice(0,2));
+
+  // Scores
+  [['score_a',0],['score_b',1]].forEach(([id,i]) => {
+    const el = $(id);
+    const v = String(d.teams?.[i]?.score ?? 0).padStart(2,'0');
+    if (el.textContent !== v) {
+      el.textContent = v;
+      if (prevScore[i] !== null && prevScore[i] !== v) {
+        el.classList.add('pop');
+        setTimeout(() => el.classList.remove('pop'), 200);
+      }
+      prevScore[i] = v;
+    }
+  });
+
+  // Leading
+  const s0 = d.teams?.[0]?.score ?? 0;
+  const s1 = d.teams?.[1]?.score ?? 0;
+  $('lead_a').classList.toggle('show', s0 > s1);
+  $('lead_b').classList.toggle('show', s1 > s0);
+
+  // Mini scoreboard table
+  set('st_name_a', (d.teams?.[0]?.name || 'TEAM A').toUpperCase());
+  set('st_name_b', (d.teams?.[1]?.name || 'TEAM B').toUpperCase());
+  set('st_pts_a', String(s0).padStart(2,'0'));
+  set('st_pts_b', String(s1).padStart(2,'0'));
+  // Show which team is chasing this turn
+  const act2 = (d.running || d.match_started) ? d.active_team : -1;
+  set('st_turn_a', act2 === 0 ? 'CHASING' : (act2 === 1 ? 'DEF' : '—'));
+  set('st_turn_b', act2 === 1 ? 'CHASING' : (act2 === 0 ? 'DEF' : '—'));
+  const aLead = s0 > s1, bLead = s1 > s0;
+  $('st_lead_a').className = 'win-cell' + (aLead ? ' leading' : '');
+  $('st_lead_b').className = 'win-cell' + (bLead ? ' leading' : '');
+  $('strow_a').className = aLead ? 'winning-row' : '';
+  $('strow_b').className = bLead ? 'winning-row' : '';
+
+  // Chasing
+  const act = (d.running || d.match_started) ? d.active_team : -1;
+  $('panel_a').classList.toggle('chasing', act === 0);
+  $('panel_b').classList.toggle('chasing', act === 1);
+
+  // Logos
+  ['a','b'].forEach((s, i) => {
+    const img = $('img_' + s);
+    const url = d.teams?.[i]?.logo;
+    if (url && url !== '/static/default_logo.png') {
+      if (img.getAttribute('src') !== url) {
+        img.classList.remove('loaded');
+        img.src = url;
+        img.onload = () => img.classList.add('loaded');
+        img.onerror = () => img.classList.remove('loaded');
+        if (img.complete && img.naturalWidth > 0) img.classList.add('loaded');
+      }
+    } else {
+      img.src = ''; img.classList.remove('loaded');
+    }
+  });
+
+  // Timer sync
+  if (d.running && !running) startTick(d.timer);
+  else if (!d.running && running) stopTick(d.timer);
+  else if (d.running && Math.abs(localSec - d.timer) > 2) localSec = d.timer;
+  if (!d.running) paintTimer(d.timer);
+
+  // Phase chip
+  const chip = $('phase_chip');
+  chip.className = 'phase-chip';
+  set('timer_phase_sm', d.phase === 'break' ? 'BREAK' : 'TURN');
+  if (d.match_over) {
+    chip.classList.add('gameover'); chip.textContent = 'MATCH OVER';
+  } else if (d.running && d.phase === 'break') {
+    chip.classList.add('onbreak'); chip.textContent = 'BREAK TIME';
+  } else if (d.running) {
+    chip.classList.add('inplay'); chip.textContent = 'IN PLAY';
+  } else {
+    chip.textContent = d.match_started ? 'PAUSED' : 'WAITING';
+  }
+
+  // Break overlay
+  const isBreak = !!(d.running && d.phase === 'break');
+  $('break_overlay').classList.toggle('show', isBreak);
+  if (isBreak) $('break_timer').textContent = fmt(d.timer);
+
+  // Live pill
+  $('live_dot').classList.toggle('paused', !d.running);
+  set('live_txt', d.running ? 'LIVE' : (d.match_over ? 'ENDED' : 'PAUSED'));
+  set('turn_pill', 'TURN ' + d.turn_number + '/' + d.total_turns);
+
+  // Match title
+  const titleEl = $('match_title');
+  const customTitle = d.display_title || d.event_name || 'KHO KHO CHAMPIONSHIP';
+  if (titleEl.textContent !== customTitle) titleEl.textContent = customTitle;
+  titleEl.classList.toggle('has-custom', !!d.display_title);
+
+  // Bottombar
+  set('bb_phase', d.phase === 'break' ? 'BREAK' : 'TURN');
+  set('bb_status', d.running ? 'LIVE' : (d.match_over ? 'FINISHED' : (d.match_started ? 'PAUSED' : 'WAITING')));
+  set('bb_venue', d.venue || '—');
+  set('bb_match', 'MATCH ' + (d.match_number || 1));
+
+  // Dots
+  buildDots(d.turn_number, d.total_turns);
+
+  // Winner
+  if (d.match_over && d.winner && !winnerShown) {
+    winnerShown = true;
+    stopTick(0);
+
+    // Set text
+    if (d.winner === 'DRAW') {
+      $('wo_name').textContent = "IT'S A DRAW!";
+      $('wo_wins_txt').textContent = '';
+    } else {
+      $('wo_name').textContent = d.winner;
+      $('wo_wins_txt').textContent = 'WINS THE MATCH!';
+    }
+    $('wo_score').textContent =
+      (d.teams[0].name||'Team A') + '  ' + s0 + '  —  ' + s1 + '  ' + (d.teams[1].name||'Team B');
+
+    // Show overlay
+    const wo = $('winner_overlay');
+    wo.style.display = 'none';
+    void wo.offsetWidth; // force reflow
+    wo.style.display = '';
+    wo.classList.add('show');
+
+    // Restart content animation
+    const content = wo.querySelector('.wo-content');
+    content.classList.remove('animating');
+    void content.offsetWidth;
+    content.classList.add('animating');
+
+    // Runners: clone the container to restart CSS animations
+    const runnersOld = $('wo_runners');
+    const runnersNew = runnersOld.cloneNode(true);
+    // Set per-runner inline animations so they actually fire
+    const configs = [
+      {dur:'1.6s',delay:'0.1s',top:'4px',size:'56px',op:'1'},
+      {dur:'1.4s',delay:'0.35s',top:'18px',size:'44px',op:'0.8'},
+      {dur:'1.7s',delay:'0.6s',top:'8px',size:'50px',op:'0.9'},
+      {dur:'1.5s',delay:'0.9s',top:'22px',size:'40px',op:'0.75'},
+    ];
+    [...runnersNew.children].forEach((el, i) => {
+      const c = configs[i] || configs[0];
+      el.style.cssText = `position:absolute;top:${c.top};left:-100px;font-size:${c.size};opacity:${c.op};filter:drop-shadow(0 0 18px rgba(255,214,10,0.8));animation:woRunnerGo ${c.dur} linear ${c.delay} forwards;`;
+    });
+    runnersOld.parentNode.replaceChild(runnersNew, runnersOld);
+
+    confetti();
+  } else if (!d.match_over) {
+    winnerShown = false;
+    $('winner_overlay').classList.remove('show');
+  }
+
+  // Score table overlay (shown/hidden by control via state flag)
+  renderScoreTable(d);
+
+  // Poll
+  renderPoll(d.poll);
+
+  // Spotlight
+  renderSpotlight(d.spotlight);
+}
+
+/* ── SCORE TABLE OVERLAY ── */
+function renderScoreTable(d) {
+  const show = !!(d.show_score_table);
+  $('scoretbl_overlay').classList.toggle('show', show);
+  $('scoretbl_backdrop').classList.toggle('show', show);
+  if (!show) return;
+
+  const nA = (d.teams?.[0]?.name || 'TEAM A').toUpperCase();
+  const nB = (d.teams?.[1]?.name || 'TEAM B').toUpperCase();
+  const s0 = d.teams?.[0]?.score ?? 0;
+  const s1 = d.teams?.[1]?.score ?? 0;
+
+  set('stbl_name_a', nA); set('stbl_name_b', nB);
+  set('stbl_th_a', nA); set('stbl_th_b', nB);
+  set('stbl_score_a', String(s0).padStart(2,'0'));
+  set('stbl_score_b', String(s1).padStart(2,'0'));
+  set('stbl_total_a', String(s0).padStart(2,'0'));
+  set('stbl_total_b', String(s1).padStart(2,'0'));
+  set('stbl_event', d.event_name || 'KHO KHO CHAMPIONSHIP');
+
+  // Build rows from score_table_data if present, else show summary
+  const tbody = $('stbl_body');
+  const rows = d.score_table_rows || [];
+  if (rows.length) {
+    tbody.innerHTML = rows.map(r => {
+      const aWins = r.score_a > r.score_b, bWins = r.score_b > r.score_a, tie = r.score_a === r.score_b;
+      return `<tr>
+        <td>${r.label || '—'}</td>
+        <td class="cell-a">${r.score_a ?? '—'}</td>
+        <td class="cell-b">${r.score_b ?? '—'}</td>
+        <td class="cell-winner">${aWins ? '▲ '+nA : bWins ? '▲ '+nB : tie ? 'DRAW' : '—'}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    // Simple summary row
+    const aWins = s0 > s1, bWins = s1 > s0;
+    tbody.innerHTML = `
+      <tr>
+        <td>FINAL SCORE</td>
+        <td class="cell-a">${s0}</td>
+        <td class="cell-b">${s1}</td>
+        <td class="cell-winner">${aWins ? '▲ '+nA : bWins ? '▲ '+nB : 'DRAW'}</td>
+      </tr>
+      <tr>
+        <td>TURNS PLAYED</td>
+        <td class="cell-a">${d.turn_number ?? '—'}</td>
+        <td class="cell-b">${d.turn_number ?? '—'}</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>MATCH STATUS</td>
+        <td colspan="2" class="cell-winner" style="text-align:center;">
+          ${d.match_over ? (d.winner === 'DRAW' ? 'DRAW' : (d.winner||'—') + ' WON') : 'IN PROGRESS'}
+        </td>
+        <td></td>
+      </tr>`;
+  }
+}
+
+function buildDots(cur, total) {
+  const w = $('turn_dots');
+  if (w._cur === cur && w._total === total) return;
+  w._cur = cur; w._total = total;
+  w.innerHTML = '';
+  for (let i = 1; i <= total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < cur ? ' done' : i === cur ? ' current' : '');
+    w.appendChild(d);
+  }
+}
+
+/* ── POLL ── */
+function renderPoll(poll) {
+  if (!poll || !poll.active) {
+    $('poll_overlay').classList.remove('show');
+    return;
+  }
+  $('poll_overlay').classList.add('show');
+  set('poll_question', poll.question || 'WHO WINS?');
+
+  const total = (poll.votes || []).reduce((a,b) => a+b, 0);
+  const container = $('poll_options');
+  const opts = poll.options || [];
+
+  // Rebuild if option count changed
+  if (container.children.length !== opts.length) {
+    container.innerHTML = '';
+    opts.forEach((opt, i) => {
+      container.innerHTML += `
+        <div class="poll-option" onclick="votePoll(${i})">
+          <div class="poll-option-fill" id="poll_fill_${i}"></div>
+          <div class="poll-option-content">
+            <span class="poll-option-text" id="poll_opt_${i}">${opt}</span>
+            <span class="poll-option-pct" id="poll_pct_${i}">0%</span>
+          </div>
+        </div>`;
+    });
+  } else {
+    opts.forEach((opt, i) => set('poll_opt_' + i, opt));
+  }
+
+  opts.forEach((opt, i) => {
+    const votes = poll.votes?.[i] || 0;
+    const pct = total > 0 ? Math.round(votes / total * 100) : 0;
+    const fill = $('poll_fill_' + i);
+    const pctEl = $('poll_pct_' + i);
+    if (fill) fill.style.width = pct + '%';
+    if (pctEl) pctEl.textContent = pct + '%';
+  });
+
+  set('poll_total', total + ' RESPONSE' + (total !== 1 ? 'S' : ''));
+}
+
+async function votePoll(idx) {
+  await fetch('/poll_vote', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({option: idx})});
+}
+
+/* ── SPOTLIGHT ── */
+function renderSpotlight(sp) {
+  if (!sp || !sp.active) {
+    $('spotlight_overlay').classList.remove('show');
+    return;
+  }
+  $('spotlight_overlay').classList.add('show');
+  set('spotlight_name', sp.name || '—');
+  set('spotlight_team', sp.team ? ('◆ ' + sp.team.toUpperCase()) : '—');
+  set('spotlight_position', sp.position || '');
+  set('spotlight_score', sp.score || '0');
+  set('spotlight_note', sp.note || '');
+
+  const img = $('spotlight_photo_img');
+  const ph = $('spotlight_placeholder');
+  if (sp.photo_url) {
+    img.src = sp.photo_url;
+    img.style.display = 'block';
+    ph.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    ph.style.display = 'block';
+    ph.textContent = (sp.name || '?').charAt(0).toUpperCase();
+  }
+}
+
+/* ── CONFETTI ── */
+function confetti() {
+  const layer = $('confetti');
+  const cols = ['#ffd60a','#ff2d55','#0a84ff','#30d158','#ff9f0a','#bf5af2'];
+  for (let i = 0; i < 140; i++) {
+    const p = document.createElement('div');
+    p.className = 'cp';
+    const sz = (5 + Math.random() * 10) + 'px';
+    p.style.cssText = `left:${Math.random()*100}vw;width:${sz};height:${sz};background:${cols[Math.floor(Math.random()*cols.length)]};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${2+Math.random()*3}s;animation-delay:${Math.random()*1.5}s;opacity:0.9;`;
+    layer.appendChild(p);
+  }
+  setTimeout(() => layer.innerHTML = '', 7000);
+}
+
+/* ── KHO KHO ANIMATION ── */
+let kkAnimTimer = null;
+function showKkAnim() {
+  // Show text
+  const txt = $('kk_anim_text');
+  txt.classList.remove('show');
+  void txt.offsetWidth; // reflow to restart animation
+  txt.classList.add('show');
+
+  // Show runners row — re-trigger CSS animation by cloning
+  const runners = $('kk_anim_runners');
+  runners.classList.remove('show');
+  void runners.offsetWidth;
+  runners.classList.add('show');
+
+  clearTimeout(kkAnimTimer);
+  kkAnimTimer = setTimeout(() => {
+    txt.classList.remove('show');
+    runners.classList.remove('show');
+  }, 2400);
+}
+
+/* ── CLOCK ── */
+function tickClock() {
+  set('clock', new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}));
+}
+tickClock(); setInterval(tickClock, 10000);
+
+/* ── DISMISS WINNER ── */
+$('winner_overlay').addEventListener('click', () => {
+  $('winner_overlay').classList.remove('show');
+  winnerShown = false;
+});
+document.addEventListener('keydown', e => {
+  if ($('winner_overlay').classList.contains('show')) {
+    $('winner_overlay').classList.remove('show');
+    winnerShown = false;
+  }
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+    e.preventDefault(); window.open('/control','_blank');
+  }
+});
+
+/* ── POLL ── */
+async function poll() {
+  try {
+    const r = await fetch('/state');
+    if (r.ok) render(await r.json());
+  } catch(_) {}
+}
+poll(); setInterval(poll, 500);
+
+// Expose for admin trigger via postMessage (optional)
+window.addEventListener('message', e => {
+  if (e.data === 'kk_anim') showKkAnim();
+});
+</script>
+</body>
+</html>
